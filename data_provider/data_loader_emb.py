@@ -7,28 +7,30 @@ from utils.tools import StandardScaler
 from utils.timefeatures import time_features
 import warnings
 import h5py
+
 warnings.filterwarnings('ignore')
 
+
 class Dataset_ETT_hour(Dataset):
-    def __init__(self, root_path="./dataset/", flag='train', size=None, 
+    def __init__(self, root_path="./dataset/", flag='train', size=None,
                  features='M', data_path='ETTh1', num_nodes=7,
                  target='OT', scale=True, inverse=False, timeenc=0, freq='h',
                  model_name="gpt2"):
         # size [seq_len, label_len, pred_len]
         # info
         if size == None:
-            self.seq_len = 24*4*4
-            self.label_len = 24*4
-            self.pred_len = 24*4
+            self.seq_len = 24 * 4 * 4
+            self.label_len = 24 * 4
+            self.pred_len = 24 * 4
         else:
             self.seq_len = size[0]
             self.label_len = size[1]
             self.pred_len = size[2]
         # init
         assert flag in ['train', 'test', 'val']
-        type_map = {'train':0, 'val':1, 'test':2}
+        type_map = {'train': 0, 'val': 1, 'test': 2}
         self.set_type = type_map[flag]
-        
+
         self.features = features
         self.target = target
         self.scale = scale
@@ -42,7 +44,7 @@ class Dataset_ETT_hour(Dataset):
         # Append '.csv' if not present
         if not data_path.endswith('.csv'):
             data_path_file = data_path
-            data_path += '.csv' 
+            data_path += '.csv'
         else:
             data_path_file = os.path.splitext(data_path)[0]
         self.data_path = os.path.join(root_path, data_path)
@@ -56,18 +58,17 @@ class Dataset_ETT_hour(Dataset):
 
     def __read_data__(self):
         self.scaler = StandardScaler()
-        df_raw = pd.read_csv(os.path.join(self.root_path,
-                                          self.data_path))
+        df_raw = pd.read_csv(self.data_path)
 
-        border1s = [0, 12*30*24 - self.seq_len, 12*30*24+4*30*24 - self.seq_len]
-        border2s = [12*30*24, 12*30*24+4*30*24, 12*30*24+8*30*24]
+        border1s = [0, 12 * 30 * 24 - self.seq_len, 12 * 30 * 24 + 4 * 30 * 24 - self.seq_len]
+        border2s = [12 * 30 * 24, 12 * 30 * 24 + 4 * 30 * 24, 12 * 30 * 24 + 8 * 30 * 24]
         border1 = border1s[self.set_type]
         border2 = border2s[self.set_type]
-        
-        if self.features=='M' or self.features=='MS':
+
+        if self.features == 'M' or self.features == 'MS':
             cols_data = df_raw.columns[1:]
             df_data = df_raw[cols_data]
-        elif self.features=='S':
+        elif self.features == 'S':
             df_data = df_raw[[self.target]]
 
         if self.scale:
@@ -76,7 +77,7 @@ class Dataset_ETT_hour(Dataset):
             data = self.scaler.transform(df_data.values)
         else:
             data = df_data.values
-            
+
         df_stamp = df_raw[['date']][border1:border2]
         df_stamp['date'] = pd.to_datetime(df_stamp.date)
         if self.timeenc == 0:
@@ -95,11 +96,11 @@ class Dataset_ETT_hour(Dataset):
         # print(f"Length of self.data_x: {len(self.data_x)}")
         self.data_y = data[border1:border2]
         self.data_stamp = data_stamp
-    
+
     def __getitem__(self, index):
         s_begin = index
         s_end = s_begin + self.seq_len
-        r_begin = s_end 
+        r_begin = s_end
         r_end = r_begin + self.pred_len
 
         seq_x = self.data_x[s_begin:s_end]
@@ -110,45 +111,46 @@ class Dataset_ETT_hour(Dataset):
 
         embeddings_stack = []
         file_path = os.path.join(self.embed_path, f"{index}.h5")
-        
+
         if os.path.exists(file_path):
             with h5py.File(file_path, 'r') as hf:
                 data = hf['embeddings'][:]
                 tensor = torch.from_numpy(data)
                 embeddings_stack.append(tensor.squeeze(0))
         else:
-            raise FileNotFoundError(f"No embedding file found at {file_path}")       
-        
+            raise FileNotFoundError(f"No embedding file found at {file_path}")
+
         embeddings = torch.stack(embeddings_stack, dim=-1)
 
         return seq_x, seq_y, seq_x_mark, seq_y_mark, embeddings
         # return seq_x, seq_y, seq_x_mark, seq_y_mark
-    
+
     def __len__(self):
-        return len(self.data_x) - self.seq_len- self.pred_len + 1
+        return len(self.data_x) - self.seq_len - self.pred_len + 1
 
     def inverse_transform(self, data):
         return self.scaler.inverse_transform(data)
-   
+
+
 class Dataset_ETT_minute(Dataset):
-    def __init__(self, root_path="./dataset/", flag='train', size=None, 
+    def __init__(self, root_path="./dataset/", flag='train', size=None,
                  features='M', data_path='ETTm1', model_name="gpt2",
                  target='OT', scale=True, inverse=False, timeenc=0, freq='t', cols=None):
         # size [seq_len, label_len, pred_len]
         # info
         if size == None:
-            self.seq_len = 24*4*4
-            self.label_len = 24*4
-            self.pred_len = 24*4
+            self.seq_len = 24 * 4 * 4
+            self.label_len = 24 * 4
+            self.pred_len = 24 * 4
         else:
             self.seq_len = size[0]
             self.label_len = size[1]
             self.pred_len = size[2]
         # init
         assert flag in ['train', 'test', 'val']
-        type_map = {'train':0, 'val':1, 'test':2}
+        type_map = {'train': 0, 'val': 1, 'test': 2}
         self.set_type = type_map[flag]
-        
+
         self.features = features
         self.target = target
         self.scale = scale
@@ -161,7 +163,7 @@ class Dataset_ETT_minute(Dataset):
         # Append '.csv' if not present
         if not data_path.endswith('.csv'):
             data_path_file = data_path
-            data_path += '.csv' 
+            data_path += '.csv'
         else:
             data_path_file = os.path.splitext(data_path)[0]
         self.data_path = os.path.join(root_path, data_path)
@@ -174,18 +176,17 @@ class Dataset_ETT_minute(Dataset):
 
     def __read_data__(self):
         self.scaler = StandardScaler()
-        df_raw = pd.read_csv(os.path.join(self.root_path,
-                                          self.data_path))
+        df_raw = pd.read_csv(self.data_path)
 
-        border1s = [0, 12*30*24*4 - self.seq_len, 12*30*24*4+4*30*24*4 - self.seq_len]
-        border2s = [12*30*24*4, 12*30*24*4+4*30*24*4, 12*30*24*4+8*30*24*4]
+        border1s = [0, 12 * 30 * 24 * 4 - self.seq_len, 12 * 30 * 24 * 4 + 4 * 30 * 24 * 4 - self.seq_len]
+        border2s = [12 * 30 * 24 * 4, 12 * 30 * 24 * 4 + 4 * 30 * 24 * 4, 12 * 30 * 24 * 4 + 8 * 30 * 24 * 4]
         border1 = border1s[self.set_type]
         border2 = border2s[self.set_type]
-        
-        if self.features=='M' or self.features=='MS':
+
+        if self.features == 'M' or self.features == 'MS':
             cols_data = df_raw.columns[1:]
             df_data = df_raw[cols_data]
-        elif self.features=='S':
+        elif self.features == 'S':
             df_data = df_raw[[self.target]]
 
         if self.scale:
@@ -194,7 +195,7 @@ class Dataset_ETT_minute(Dataset):
             data = self.scaler.transform(df_data.values)
         else:
             data = df_data.values
-            
+
         df_stamp = df_raw[['date']][border1:border2]
         df_stamp['date'] = pd.to_datetime(df_stamp.date)
         if self.timeenc == 0:
@@ -212,11 +213,11 @@ class Dataset_ETT_minute(Dataset):
         self.data_x = data[border1:border2]
         self.data_y = data[border1:border2]
         self.data_stamp = data_stamp
-    
+
     def __getitem__(self, index):
         s_begin = index
         s_end = s_begin + self.seq_len
-        r_begin = s_end 
+        r_begin = s_end
         r_end = r_begin + self.pred_len
 
         seq_x = self.data_x[s_begin:s_end]
@@ -227,30 +228,31 @@ class Dataset_ETT_minute(Dataset):
 
         embeddings_stack = []
         file_path = os.path.join(self.embed_path, f"{index}.h5")
-        
+
         if os.path.exists(file_path):
             with h5py.File(file_path, 'r') as hf:
                 data = hf['embeddings'][:]
                 tensor = torch.from_numpy(data)
                 embeddings_stack.append(tensor.squeeze(0))
         else:
-            raise FileNotFoundError(f"No embedding file found at {file_path}")       
-        
+            raise FileNotFoundError(f"No embedding file found at {file_path}")
+
         embeddings = torch.stack(embeddings_stack, dim=-1)
 
         return seq_x, seq_y, seq_x_mark, seq_y_mark, embeddings
-    
+
     def __len__(self):
         return len(self.data_x) - self.seq_len - self.pred_len + 1
 
     def inverse_transform(self, data):
         return self.scaler.inverse_transform(data)
 
+
 class Dataset_Custom(Dataset):
     def __init__(self, root_path="./dataset/", flag='train', size=None,
                  features='M', data_path='ECL',
                  target='OT', scale=True, timeenc=0, freq='h',
-                 patch_len=16,percent=100,model_name="gpt2"):
+                 patch_len=16, percent=100, model_name="gpt2"):
         # size [seq_len, label_len, pred_len]
         # info
         self.percent = percent
@@ -279,7 +281,7 @@ class Dataset_Custom(Dataset):
 
         if not data_path.endswith('.csv'):
             data_path_file = data_path
-            data_path += '.csv' 
+            data_path += '.csv'
         else:
             data_path_file = os.path.splitext(data_path)[0]
         self.data_path = os.path.join(root_path, data_path)
@@ -292,8 +294,7 @@ class Dataset_Custom(Dataset):
 
     def __read_data__(self):
         self.scaler = StandardScaler()
-        df_raw = pd.read_csv(os.path.join(self.root_path,
-                                          self.data_path))
+        df_raw = pd.read_csv(self.data_path)
 
         '''
         df_raw.columns: ['date', ...(other features), target feature]
@@ -369,7 +370,7 @@ class Dataset_Custom(Dataset):
                 embeddings_stack.append(tensor.squeeze(0))
         else:
             raise FileNotFoundError(f"No embedding file found at {file_path}")
-                
+
         embeddings = torch.stack(embeddings_stack, dim=-1)
         # print("Shape of embeddings: " ,embeddings.shape)
         return seq_x, seq_y, seq_x_mark, seq_y_mark, embeddings
