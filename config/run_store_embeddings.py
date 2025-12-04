@@ -26,6 +26,7 @@ def run_etttm1():
                 "--num_nodes", str(num_nodes),
                 "--input_len", str(input_len),
                 "--output_len", str(output_len),
+                "--num_workers", "0",
             ]
             print("Running:", " ".join(cmd))
             with open(log_file, "w", encoding="utf-8") as f:
@@ -52,6 +53,7 @@ def run_ili():
                 "--num_nodes", str(num_nodes),
                 "--input_len", str(input_len),
                 "--output_len", str(output_len),
+                "--num_workers", "0",
             ]
             print("Running:", " ".join(cmd))
             with open(log_file, "w", encoding="utf-8") as f:
