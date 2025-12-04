@@ -11,7 +11,7 @@ import h5py
 warnings.filterwarnings('ignore')
 
 class Dataset_ETT_hour(Dataset):
-    def __init__(self, root_path="/mnt/sfs-common/dataset/", flag='train', size=None, 
+    def __init__(self, root_path="./dataset/", flag='train', size=None, 
                  features='M', data_path='ETTh1',
                  target='OT', scale=False, inverse=False, timeenc=0, freq='h'):
 
@@ -30,13 +30,14 @@ class Dataset_ETT_hour(Dataset):
         self.freq = freq
         self.timeenc = timeenc
         self.root_path = root_path
-        self.data_path = data_path
 
-        # Append '.csv' if not present
+        # 只保存文件名部分，根目录用 root_path 控制
         if not data_path.endswith('.csv'):
+            data_path_file = data_path + '.csv'
+        else:
             data_path_file = data_path
-            data_path += '.csv' 
-        self.data_path = os.path.join(root_path, data_path)
+
+        self.data_path = data_path_file
         self.data_path_file = data_path_file
 
         self.__read_data__()
@@ -103,7 +104,7 @@ class Dataset_ETT_hour(Dataset):
         return self.scaler.inverse_transform(data)
 
 class Dataset_ETT_minute(Dataset):
-    def __init__(self, root_path="/mnt/sfs-common/dataset/", flag='train', size=None, 
+    def __init__(self, root_path="./dataset/", flag='train', size=None, 
                  features='M', data_path='ETTm1', 
                  target='OT', scale=False, inverse=False, timeenc=0, freq='t', cols=None):
 
@@ -128,12 +129,13 @@ class Dataset_ETT_minute(Dataset):
         self.freq = freq
         
         self.root_path = root_path
-        self.data_path = data_path
 
         if not data_path.endswith('.csv'):
+            data_path_file = data_path + '.csv'
+        else:
             data_path_file = data_path
-            data_path += '.csv' 
-        self.data_path = os.path.join(root_path, data_path)
+
+        self.data_path = data_path_file
         self.data_path_file = data_path_file
 
         self.__read_data__()
@@ -204,7 +206,7 @@ class Dataset_ETT_minute(Dataset):
         return self.scaler.inverse_transform(data)
 
 class Dataset_Custom(Dataset):
-    def __init__(self, root_path="/mnt/sfs-common/dataset/", flag='train', size=None,
+    def __init__(self, root_path="./dataset/", flag='train', size=None,
                  features='M', data_path='ECL',
                  target='OT', scale=False, timeenc=0, freq='h',patch_len=16,percent=100):
         # size [seq_len, label_len, pred_len]
@@ -231,12 +233,13 @@ class Dataset_Custom(Dataset):
         self.freq = freq
 
         self.root_path = root_path
-        self.data_path = data_path
 
         if not data_path.endswith('.csv'):
+            data_path_file = data_path + '.csv'
+        else:
             data_path_file = data_path
-            data_path += '.csv' 
-        self.data_path = os.path.join(root_path, data_path)
+
+        self.data_path = data_path_file
         self.data_path_file = data_path_file
 
         self.__read_data__()
